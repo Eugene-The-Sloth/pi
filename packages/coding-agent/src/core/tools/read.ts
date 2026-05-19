@@ -12,7 +12,7 @@ import { formatDimensionNote, resizeImage } from "../../utils/image-resize.js";
 import { detectSupportedImageMimeTypeFromFile } from "../../utils/mime.js";
 import { formatPathRelativeToCwdOrAbsolute } from "../../utils/paths.js";
 import type { ToolDefinition, ToolRenderResultOptions } from "../extensions/types.js";
-import { resolveReadPath } from "./path-utils.js";
+import { resolveReadPathAsync, resolveToCwd } from "./path-utils.js";
 import { getTextOutput, invalidArgText, replaceTabs, shortenPath, str } from "./render-utils.js";
 import { wrapToolDefinition } from "./tool-definition-wrapper.js";
 import { DEFAULT_MAX_BYTES, DEFAULT_MAX_LINES, formatSize, type TruncationResult, truncateHead } from "./truncate.js";
@@ -124,7 +124,7 @@ function getCompactReadClassification(
 	const rawPath = str(args?.file_path ?? args?.path);
 	if (!rawPath) return undefined;
 
-	const absolutePath = resolveReadPath(rawPath, cwd);
+	const absolutePath = resolveToCwd(rawPath, cwd);
 	const fileName = basename(absolutePath);
 	if (fileName === "SKILL.md") {
 		return { kind: "skill", label: basename(dirname(absolutePath)) || fileName };
@@ -223,7 +223,6 @@ export function createReadToolDefinition(
 			_onUpdate?,
 			ctx?,
 		) {
-			const absolutePath = resolveReadPath(path, cwd);
 			return new Promise<{ content: (TextContent | ImageContent)[]; details: ReadToolDetails | undefined }>(
 				(resolve, reject) => {
 					if (signal?.aborted) {
@@ -239,6 +238,8 @@ export function createReadToolDefinition(
 
 					(async () => {
 						try {
+							const absolutePath = await resolveReadPathAsync(path, cwd);
+							if (aborted) return;
 							// Check if file exists and is readable.
 							await ops.access(absolutePath);
 							if (aborted) return;

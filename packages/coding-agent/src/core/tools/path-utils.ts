@@ -1,4 +1,5 @@
 import { accessSync, constants } from "node:fs";
+import { access } from "node:fs/promises";
 import * as os from "node:os";
 import { isAbsolute, resolve as resolvePath } from "node:path";
 
@@ -26,6 +27,15 @@ function tryCurlyQuoteVariant(filePath: string): string {
 function fileExists(filePath: string): boolean {
 	try {
 		accessSync(filePath, constants.F_OK);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+async function fileExistsAsync(filePath: string): Promise<boolean> {
+	try {
+		await access(filePath, constants.F_OK);
 		return true;
 	} catch {
 		return false;
@@ -87,6 +97,40 @@ export function resolveReadPath(filePath: string, cwd: string): string {
 	// Try combined NFD + curly quote (for French macOS screenshots like "Capture d'écran")
 	const nfdCurlyVariant = tryCurlyQuoteVariant(nfdVariant);
 	if (nfdCurlyVariant !== resolved && fileExists(nfdCurlyVariant)) {
+		return nfdCurlyVariant;
+	}
+
+	return resolved;
+}
+
+export async function resolveReadPathAsync(filePath: string, cwd: string): Promise<string> {
+	const resolved = resolveToCwd(filePath, cwd);
+
+	if (await fileExistsAsync(resolved)) {
+		return resolved;
+	}
+
+	// Try macOS AM/PM variant (narrow no-break space before AM/PM)
+	const amPmVariant = tryMacOSScreenshotPath(resolved);
+	if (amPmVariant !== resolved && (await fileExistsAsync(amPmVariant))) {
+		return amPmVariant;
+	}
+
+	// Try NFD variant (macOS stores filenames in NFD form)
+	const nfdVariant = tryNFDVariant(resolved);
+	if (nfdVariant !== resolved && (await fileExistsAsync(nfdVariant))) {
+		return nfdVariant;
+	}
+
+	// Try curly quote variant (macOS uses U+2019 in screenshot names)
+	const curlyVariant = tryCurlyQuoteVariant(resolved);
+	if (curlyVariant !== resolved && (await fileExistsAsync(curlyVariant))) {
+		return curlyVariant;
+	}
+
+	// Try combined NFD + curly quote (for French macOS screenshots like "Capture d'écran")
+	const nfdCurlyVariant = tryCurlyQuoteVariant(nfdVariant);
+	if (nfdCurlyVariant !== resolved && (await fileExistsAsync(nfdCurlyVariant))) {
 		return nfdCurlyVariant;
 	}
 
