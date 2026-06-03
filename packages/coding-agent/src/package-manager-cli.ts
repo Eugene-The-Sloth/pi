@@ -14,7 +14,7 @@ import {
 } from "./config.ts";
 import { DefaultPackageManager } from "./core/package-manager.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
-import { hasProjectConfig, ProjectTrustStore } from "./core/trust-manager.ts";
+import { hasProjectPiDirectory, ProjectTrustStore } from "./core/trust-manager.ts";
 import { spawnProcess } from "./utils/child-process.ts";
 import { getLatestPiRelease, isNewerPackageVersion } from "./utils/version-check.ts";
 import {
@@ -89,7 +89,7 @@ Install a package and add it to settings.
 
 Options:
   -l, --local    Install project-locally (.pi/settings.json)
-  -f, --force    Trust project config for this command
+  -f, --force    Trust project .pi for this command
 
 Examples:
   ${APP_NAME} install npm:@foo/bar
@@ -110,7 +110,7 @@ Alias: ${APP_NAME} uninstall <source> [-l]
 
 Options:
   -l, --local    Remove from project settings (.pi/settings.json)
-  -f, --force    Trust project config for this command
+  -f, --force    Trust project .pi for this command
 
 Examples:
   ${APP_NAME} remove npm:@foo/bar
@@ -144,7 +144,7 @@ Short forms:
 List installed packages from user and project settings.
 
 Options:
-  -f, --force    Trust project config for this command
+  -f, --force    Trust project .pi for this command
 `);
 			return;
 	}
@@ -398,13 +398,13 @@ export async function handleConfigCommand(args: string[]): Promise<boolean> {
 
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
-	const projectConfigExists = hasProjectConfig(cwd);
-	const projectConfigTrusted =
-		!projectConfigExists ||
+	const projectPiExists = hasProjectPiDirectory(cwd);
+	const projectPiTrusted =
+		!projectPiExists ||
 		args.includes("--force") ||
 		args.includes("-f") ||
 		new ProjectTrustStore(agentDir).get(cwd) === true;
-	const settingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted });
+	const settingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted: projectPiTrusted });
 	reportSettingsErrors(settingsManager, "config command");
 	const packageManager = new DefaultPackageManager({ cwd, agentDir, settingsManager });
 	const resolvedPaths = await packageManager.resolve();
@@ -468,21 +468,21 @@ export async function handlePackageCommand(args: string[]): Promise<boolean> {
 
 	const cwd = process.cwd();
 	const agentDir = getAgentDir();
-	const projectConfigExists = hasProjectConfig(cwd);
+	const projectPiExists = hasProjectPiDirectory(cwd);
 	const writesProjectPackageConfig = (options.command === "install" || options.command === "remove") && options.local;
-	const commandForcesProjectConfigTrust =
+	const commandForcesProjectPiTrust =
 		options.force && (options.command === "install" || options.command === "remove" || options.command === "list");
-	const projectConfigTrusted =
-		commandForcesProjectConfigTrust ||
-		(projectConfigExists && new ProjectTrustStore(agentDir).get(cwd) === true) ||
-		(writesProjectPackageConfig && !projectConfigExists);
-	if (!projectConfigTrusted && projectConfigExists && writesProjectPackageConfig) {
-		console.error(chalk.red("Project config is not trusted. Use --force to modify local package config."));
+	const projectPiTrusted =
+		commandForcesProjectPiTrust ||
+		(projectPiExists && new ProjectTrustStore(agentDir).get(cwd) === true) ||
+		(writesProjectPackageConfig && !projectPiExists);
+	if (!projectPiTrusted && projectPiExists && writesProjectPackageConfig) {
+		console.error(chalk.red("Project .pi is not trusted. Use --force to modify local package config."));
 		process.exitCode = 1;
 		return true;
 	}
 
-	const settingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted });
+	const settingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted: projectPiTrusted });
 	reportSettingsErrors(settingsManager, "package command");
 	const selfUpdateNpmCommand = settingsManager.getGlobalSettings().npmCommand;
 

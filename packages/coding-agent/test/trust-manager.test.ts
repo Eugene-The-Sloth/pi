@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import lockfile from "proper-lockfile";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { hasProjectConfig, ProjectTrustStore } from "../src/core/trust-manager.ts";
+import { hasProjectPiDirectory, ProjectTrustStore } from "../src/core/trust-manager.ts";
 
 describe("ProjectTrustStore", () => {
 	let tempDir: string;
@@ -67,10 +67,10 @@ describe("ProjectTrustStore", () => {
 		expect(() => store.get(cwd)).toThrow(/Failed to read trust store/);
 	});
 
-	it("detects .pi project config directories", () => {
-		expect(hasProjectConfig(cwd)).toBe(false);
+	it("detects project .pi directories", () => {
+		expect(hasProjectPiDirectory(cwd)).toBe(false);
 
 		mkdirSync(join(cwd, ".pi"), { recursive: true });
-		expect(hasProjectConfig(cwd)).toBe(true);
+		expect(hasProjectPiDirectory(cwd)).toBe(true);
 	});
 });

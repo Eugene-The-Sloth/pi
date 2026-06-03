@@ -224,7 +224,7 @@ export class FileSettingsStorage implements SettingsStorage {
 
 	withLock(scope: SettingsScope, fn: (current: string | undefined) => string | undefined): void {
 		if (scope === "project" && !this.projectConfigTrusted) {
-			throw new Error("Project config is not trusted; refusing to access project settings");
+			throw new Error("Project .pi is not trusted; refusing to access project settings");
 		}
 
 		const path = scope === "global" ? this.globalSettingsPath : this.projectSettingsPath;
@@ -272,7 +272,7 @@ export class InMemorySettingsStorage implements SettingsStorage {
 
 	withLock(scope: SettingsScope, fn: (current: string | undefined) => string | undefined): void {
 		if (scope === "project" && !this.projectConfigTrusted) {
-			throw new Error("Project config is not trusted; refusing to access project settings");
+			throw new Error("Project .pi is not trusted; refusing to access project settings");
 		}
 
 		const current = scope === "global" ? this.global : this.project;
@@ -535,7 +535,7 @@ export class SettingsManager {
 
 	private assertProjectConfigTrustedForWrite(): void {
 		if (!this.projectConfigTrusted) {
-			throw new Error("Project config is not trusted; refusing to write project settings");
+			throw new Error("Project .pi is not trusted; refusing to write project settings");
 		}
 	}
 

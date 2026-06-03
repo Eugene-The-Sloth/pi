@@ -85,7 +85,7 @@ import { BUILTIN_SLASH_COMMANDS } from "../../core/slash-commands.ts";
 import type { SourceInfo } from "../../core/source-info.ts";
 import { isInstallTelemetryEnabled } from "../../core/telemetry.ts";
 import type { TruncationResult } from "../../core/tools/truncate.ts";
-import { hasProjectConfig, type ProjectTrustDecision, ProjectTrustStore } from "../../core/trust-manager.ts";
+import { hasProjectPiDirectory, type ProjectTrustDecision, ProjectTrustStore } from "../../core/trust-manager.ts";
 import { getChangelogPath, getNewEntries, parseChangelog } from "../../utils/changelog.ts";
 import { copyToClipboard } from "../../utils/clipboard.ts";
 import { extensionForImageMimeType, readClipboardImage } from "../../utils/clipboard-image.ts";
@@ -256,8 +256,8 @@ export interface InteractiveModeOptions {
 	initialMessages?: string[];
 	/** Force verbose startup (overrides quietStartup setting) */
 	verbose?: boolean;
-	/** Force project config trust for this process */
-	forceProjectConfigTrust?: boolean;
+	/** Force project .pi trust for this process */
+	forceProjectPiTrust?: boolean;
 }
 
 export class InteractiveMode {
@@ -684,9 +684,9 @@ export class InteractiveMode {
 			this.headerContainer.addChild(this.builtInHeader);
 		}
 
-		if (!this.settingsManager.isProjectConfigTrusted() && hasProjectConfig(this.sessionManager.getCwd())) {
+		if (!this.settingsManager.isProjectConfigTrusted() && hasProjectPiDirectory(this.sessionManager.getCwd())) {
 			this.chatContainer.addChild(
-				new Text(theme.fg("warning", "This project is not trusted. Change with /trust"), 1, 0),
+				new Text(theme.fg("warning", "This project's .pi directory is not trusted. Change with /trust"), 1, 0),
 			);
 		}
 
@@ -4952,7 +4952,7 @@ export class InteractiveMode {
 		const cwd = this.sessionManager.getCwd();
 		const current = this.formatTrustDecision(trustStore.get(cwd));
 		const choice = await this.showExtensionSelector(
-			`Trust project configuration?\nCurrent setting: ${current}\nLoad .pi from ${cwd}?\nWarning: Project extensions can execute code.`,
+			`Trust project .pi directory?\nCurrent setting: ${current}\nLoad .pi from ${cwd}?\nWarning: Project extensions can execute code.`,
 			["Trust", "Don't trust", "Reset"],
 		);
 		if (choice === "Trust") {
@@ -4999,8 +4999,8 @@ export class InteractiveMode {
 		const trustStore = new ProjectTrustStore(getAgentDir());
 		const cwd = this.sessionManager.getCwd();
 		trustStore.set(cwd, decision);
-		const projectConfigTrusted = this.options.forceProjectConfigTrust === true || decision === true;
-		this.settingsManager.setProjectConfigTrusted(projectConfigTrusted);
+		const projectPiTrusted = this.options.forceProjectPiTrust === true || decision === true;
+		this.settingsManager.setProjectConfigTrusted(projectPiTrusted);
 		await this.handleReloadCommand();
 		this.showStatus(`Project trust: ${this.formatTrustDecision(decision)}`);
 	}

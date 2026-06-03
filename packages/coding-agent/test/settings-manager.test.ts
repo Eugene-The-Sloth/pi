@@ -258,8 +258,8 @@ describe("SettingsManager", () => {
 		});
 	});
 
-	describe("project config trust", () => {
-		it("should skip project settings when project config is not trusted", () => {
+	describe("project .pi trust", () => {
+		it("should skip project settings when project .pi is not trusted", () => {
 			writeFileSync(join(agentDir, "settings.json"), JSON.stringify({ theme: "global" }));
 			writeFileSync(join(projectDir, ".pi", "settings.json"), JSON.stringify({ theme: "project" }));
 
@@ -269,13 +269,13 @@ describe("SettingsManager", () => {
 			expect(manager.getProjectSettings()).toEqual({});
 		});
 
-		it("should fail project settings writes when project config is not trusted", async () => {
+		it("should fail project settings writes when project .pi is not trusted", async () => {
 			const projectSettingsPath = join(projectDir, ".pi", "settings.json");
 			writeFileSync(projectSettingsPath, JSON.stringify({ packages: ["npm:existing"] }));
 			const manager = SettingsManager.create(projectDir, agentDir, { projectConfigTrusted: false });
 
 			expect(() => manager.setProjectPackages(["npm:new"])).toThrow(
-				"Project config is not trusted; refusing to write project settings",
+				"Project .pi is not trusted; refusing to write project settings",
 			);
 			await manager.flush();
 

@@ -92,7 +92,7 @@ function withTrustFileLock<T>(path: string, fn: () => T): T {
 	}
 }
 
-export function hasProjectConfig(cwd: string): boolean {
+export function hasProjectPiDirectory(cwd: string): boolean {
 	const resolvedCwd = resolvePath(cwd);
 	return existsSync(join(resolvedCwd, CONFIG_DIR_NAME));
 }

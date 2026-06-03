@@ -822,6 +822,7 @@ export class DefaultPackageManager implements PackageManager {
 	}
 
 	getInstalledPath(source: string, scope: "user" | "project"): string | undefined {
+		this.assertProjectPiTrustedForScope(scope);
 		const parsed = this.parseSource(source);
 		if (parsed.type === "npm") {
 			const path = this.getNpmInstallPath(parsed, scope);
@@ -956,6 +957,7 @@ export class DefaultPackageManager implements PackageManager {
 	async install(source: string, options?: { local?: boolean }): Promise<void> {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
+		this.assertProjectPiTrustedForScope(scope);
 		await this.withProgress("install", source, `Installing ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.installNpm(parsed, scope, false);
@@ -984,6 +986,7 @@ export class DefaultPackageManager implements PackageManager {
 	async remove(source: string, options?: { local?: boolean }): Promise<void> {
 		const parsed = this.parseSource(source);
 		const scope: SourceScope = options?.local ? "project" : "user";
+		this.assertProjectPiTrustedForScope(scope);
 		await this.withProgress("remove", source, `Removing ${source}...`, async () => {
 			if (parsed.type === "npm") {
 				await this.uninstallNpm(parsed, scope);
@@ -1290,6 +1293,7 @@ export class DefaultPackageManager implements PackageManager {
 	}
 
 	private async installParsedSource(parsed: ParsedSource, scope: SourceScope): Promise<void> {
+		this.assertProjectPiTrustedForScope(scope);
 		if (parsed.type === "npm") {
 			await this.installNpm(parsed, scope, scope === "temporary");
 			return;
@@ -1666,6 +1670,12 @@ export class DefaultPackageManager implements PackageManager {
 		return { name, version };
 	}
 
+	private assertProjectPiTrustedForScope(scope: SourceScope): void {
+		if (scope === "project" && !this.settingsManager.isProjectConfigTrusted()) {
+			throw new Error("Project .pi is not trusted; refusing to access project package storage");
+		}
+	}
+
 	private getNpmCommand(): { command: string; args: string[] } {
 		const configuredCommand = this.settingsManager.getNpmCommand();
 		if (!configuredCommand || configuredCommand.length === 0) {
@@ -1886,6 +1896,7 @@ export class DefaultPackageManager implements PackageManager {
 			return this.getTemporaryDir("npm");
 		}
 		if (scope === "project") {
+			this.assertProjectPiTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "npm");
 		}
 		return join(this.agentDir, "npm");
@@ -1926,6 +1937,7 @@ export class DefaultPackageManager implements PackageManager {
 			return join(this.getTemporaryDir("npm"), "node_modules", source.name);
 		}
 		if (scope === "project") {
+			this.assertProjectPiTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "npm", "node_modules", source.name);
 		}
 		return join(this.agentDir, "npm", "node_modules", source.name);
@@ -1964,6 +1976,7 @@ export class DefaultPackageManager implements PackageManager {
 			return undefined;
 		}
 		if (scope === "project") {
+			this.assertProjectPiTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME, "git");
 		}
 		return join(this.agentDir, "git");
@@ -1989,6 +2002,7 @@ export class DefaultPackageManager implements PackageManager {
 
 	private getBaseDirForScope(scope: SourceScope): string {
 		if (scope === "project") {
+			this.assertProjectPiTrustedForScope(scope);
 			return join(this.cwd, CONFIG_DIR_NAME);
 		}
 		if (scope === "user") {
@@ -2250,8 +2264,8 @@ export class DefaultPackageManager implements PackageManager {
 			themes: join(projectBaseDir, "themes"),
 		};
 		const userAgentsSkillsDir = join(getHomeDir(), ".agents", "skills");
-		const projectConfigTrusted = this.settingsManager.isProjectConfigTrusted();
-		const includeProjectScopedResources = projectConfigTrusted || !existsSync(projectBaseDir);
+		const projectPiTrusted = this.settingsManager.isProjectConfigTrusted();
+		const includeProjectScopedResources = projectPiTrusted || !existsSync(projectBaseDir);
 		const projectAgentsSkillDirs = includeProjectScopedResources
 			? collectAncestorAgentsSkillDirs(this.cwd).filter((dir) => resolve(dir) !== resolve(userAgentsSkillsDir))
 			: [];
@@ -2270,7 +2284,7 @@ export class DefaultPackageManager implements PackageManager {
 			}
 		};
 
-		if (projectConfigTrusted) {
+		if (projectPiTrusted) {
 			// Project extensions from .pi/
 			addResources(
 				"extensions",

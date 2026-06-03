@@ -139,7 +139,7 @@ describe("package commands", () => {
 		}
 	});
 
-	it("blocks local package changes when project config is untrusted", async () => {
+	it("blocks local package changes when project .pi is untrusted", async () => {
 		mkdirSync(join(projectDir, ".pi"), { recursive: true });
 		const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
@@ -147,14 +147,14 @@ describe("package commands", () => {
 			await expect(main(["install", "-l", "./local-package"])).resolves.toBeUndefined();
 
 			const stderr = errorSpy.mock.calls.map(([message]) => String(message)).join("\n");
-			expect(stderr).toContain("Project config is not trusted. Use --force to modify local package config.");
+			expect(stderr).toContain("Project .pi is not trusted. Use --force to modify local package config.");
 			expect(process.exitCode).toBe(1);
 		} finally {
 			errorSpy.mockRestore();
 		}
 	});
 
-	it("allows local package install to initialize fresh project config", async () => {
+	it("allows local package install to initialize fresh project .pi", async () => {
 		await main(["install", "-l", packageDir]);
 
 		const settingsPath = join(projectDir, ".pi", "settings.json");

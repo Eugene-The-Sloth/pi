@@ -40,7 +40,7 @@ import {
 import { assertValidSessionId, SessionManager } from "./core/session-manager.ts";
 import { SettingsManager } from "./core/settings-manager.ts";
 import { printTimings, resetTimings, time } from "./core/timings.ts";
-import { hasProjectConfig, ProjectTrustStore } from "./core/trust-manager.ts";
+import { hasProjectPiDirectory, ProjectTrustStore } from "./core/trust-manager.ts";
 import { runMigrations, showDeprecationWarnings } from "./migrations.ts";
 import { InteractiveMode, runPrintMode, runRpcMode } from "./modes/index.ts";
 import { ExtensionSelectorComponent } from "./modes/interactive/components/extension-selector.ts";
@@ -443,7 +443,7 @@ async function showStartupSelector<T>(
 	options: Array<{ label: string; value: T }>,
 ): Promise<T | undefined> {
 	// Startup prompts run before resource loading. Themes from packages, --themes,
-	// and project config are unavailable here; built-ins and user theme files work.
+	// and project .pi resources are unavailable here; built-ins and user theme files work.
 	initTheme(settingsManager.getTheme());
 	setKeybindings(KeybindingsManager.create());
 
@@ -487,7 +487,7 @@ async function promptForMissingSessionCwd(
 async function promptForProjectTrust(cwd: string, settingsManager: SettingsManager): Promise<boolean | undefined> {
 	return showStartupSelector(
 		settingsManager,
-		`Trust project configuration?\nLoad .pi from ${cwd}?\nWarning: Project extensions can execute code.`,
+		`Trust project .pi directory?\nLoad .pi from ${cwd}?\nWarning: Project extensions can execute code.`,
 		[
 			{ label: "Trust", value: true },
 			{ label: "Don't trust", value: false },
@@ -495,7 +495,7 @@ async function promptForProjectTrust(cwd: string, settingsManager: SettingsManag
 	);
 }
 
-async function resolveProjectConfigTrusted(options: {
+async function resolveProjectPiTrusted(options: {
 	cwd: string;
 	trustStore: ProjectTrustStore;
 	force: boolean;
@@ -505,7 +505,7 @@ async function resolveProjectConfigTrusted(options: {
 	if (options.force) {
 		return true;
 	}
-	if (!hasProjectConfig(options.cwd)) {
+	if (!hasProjectPiDirectory(options.cwd)) {
 		return false;
 	}
 
@@ -597,23 +597,22 @@ export async function main(args: string[], options?: MainOptions) {
 	const agentDir = getAgentDir();
 	const promptSettingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted: false });
 	const trustPromptMode: AppMode = parsed.help || parsed.listModels !== undefined ? "print" : appMode;
-	const forceProjectConfigTrusted = parsed.force === true;
+	const forceProjectPiTrust = parsed.force === true;
 	const trustStore = new ProjectTrustStore(agentDir);
-	const startupProjectConfigTrusted = await resolveProjectConfigTrusted({
+	const startupProjectPiTrusted = await resolveProjectPiTrusted({
 		cwd,
 		trustStore,
-		force: forceProjectConfigTrusted,
+		force: forceProjectPiTrust,
 		appMode: trustPromptMode,
 		settingsManagerForPrompt: promptSettingsManager,
 	});
-	// Legacy extension migrations are intentional filesystem housekeeping and run
-	// regardless of trust. Trust gates loading/executing project config, not moving
-	// old Pi config directories to the current layout.
-	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(cwd);
+	const { migratedAuthProviders: migratedProviders, deprecationWarnings } = runMigrations(cwd, {
+		projectPiTrusted: startupProjectPiTrusted,
+	});
 	time("runMigrations");
 
 	const startupSettingsManager = SettingsManager.create(cwd, agentDir, {
-		projectConfigTrusted: startupProjectConfigTrusted,
+		projectConfigTrusted: startupProjectPiTrusted,
 	});
 	reportDiagnostics(collectSettingsDiagnostics(startupSettingsManager, "startup session lookup"));
 
@@ -653,10 +652,10 @@ export async function main(args: string[], options?: MainOptions) {
 
 	const initialRuntimeCwd = sessionManager.getCwd();
 	if (initialRuntimeCwd !== cwd) {
-		await resolveProjectConfigTrusted({
+		await resolveProjectPiTrusted({
 			cwd: initialRuntimeCwd,
 			trustStore,
-			force: forceProjectConfigTrusted,
+			force: forceProjectPiTrust,
 			appMode: trustPromptMode,
 			settingsManagerForPrompt: promptSettingsManager,
 		});
@@ -672,8 +671,8 @@ export async function main(args: string[], options?: MainOptions) {
 		sessionManager,
 		sessionStartEvent,
 	}) => {
-		const projectConfigTrusted = forceProjectConfigTrusted || (hasProjectConfig(cwd) && trustStore.get(cwd) === true);
-		const runtimeSettingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted });
+		const projectPiTrusted = forceProjectPiTrust || (hasProjectPiDirectory(cwd) && trustStore.get(cwd) === true);
+		const runtimeSettingsManager = SettingsManager.create(cwd, agentDir, { projectConfigTrusted: projectPiTrusted });
 		const services = await createAgentSessionServices({
 			cwd,
 			agentDir,
@@ -833,7 +832,7 @@ export async function main(args: string[], options?: MainOptions) {
 			initialImages,
 			initialMessages: parsed.messages,
 			verbose: parsed.verbose,
-			forceProjectConfigTrust: forceProjectConfigTrusted,
+			forceProjectPiTrust,
 		});
 		if (startupBenchmark) {
 			await interactiveMode.init();

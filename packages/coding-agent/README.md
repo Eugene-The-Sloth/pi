@@ -290,7 +290,7 @@ See [docs/settings.md](docs/settings.md) for all options.
 
 ### Project Trust
 
-Interactive startup asks before loading `.pi` in a working directory whose trust has not been set. Decisions are stored in `~/.pi/agent/trust.json` by CWD: `true` loads project config, `false` skips it, and a missing entry asks again. Use `/trust yes`, `/trust no`, `/trust reset`, or `/trust` to update the current CWD. Use `--force`/`-f` to load project config for one run regardless of trust.
+Interactive startup asks before loading `.pi` in a working directory whose trust has not been set. Decisions are stored in `~/.pi/agent/trust.json` by CWD: `true` loads the project `.pi` directory, `false` skips all project `.pi` settings, resources, packages, and migrations, and a missing entry asks again. Use `/trust yes`, `/trust no`, `/trust reset`, or `/trust` to update the current CWD. Use `--force`/`-f` to load project `.pi` for one run regardless of trust.
 
 ### Telemetry and update checks
 
@@ -589,7 +589,7 @@ Combine `--no-*` with explicit flags to load exactly what you need, ignoring set
 | `--system-prompt <text>` | Replace default prompt (context files and skills still appended) |
 | `--append-system-prompt <text>` | Append to system prompt |
 | `--verbose` | Force verbose startup |
-| `-f`, `--force` | Force loading project `.pi` config regardless of trust |
+| `-f`, `--force` | Force loading project `.pi` regardless of trust |
 | `-h`, `--help` | Show help |
 | `-v`, `--version` | Show version |
 
