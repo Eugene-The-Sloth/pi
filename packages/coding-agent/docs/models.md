@@ -331,6 +331,8 @@ Some Anthropic models require adaptive thinking (`thinking.type: "adaptive"` plu
 
 Some Anthropic-compatible providers emit thinking blocks with empty signatures and still expect them on replay. Set `allowEmptySignature` to `true` only for those providers; real Anthropic rejects empty thinking signatures.
 
+Some Anthropic-compatible proxies require OAuth-style Bearer auth even when their tokens do not use Anthropic's `sk-ant-oat` prefix. Set `authMode` to `"oauth"` to force Bearer auth plus Claude Code OAuth request behavior, or `"apiKey"` to force `X-Api-Key` auth. The default `"auto"` keeps prefix-based detection.
+
 ```json
 {
   "providers": {
@@ -342,7 +344,8 @@ Some Anthropic-compatible providers emit thinking blocks with empty signatures a
         "supportsEagerToolInputStreaming": false,
         "supportsLongCacheRetention": true,
         "forceAdaptiveThinking": true,
-        "allowEmptySignature": true
+        "allowEmptySignature": true,
+        "authMode": "oauth"
       },
       "models": [
         {
@@ -364,6 +367,7 @@ Some Anthropic-compatible providers emit thinking blocks with empty signatures a
 | `supportsCacheControlOnTools` | Whether the provider accepts Anthropic-style `cache_control` markers on tool definitions. Default: `true`. |
 | `forceAdaptiveThinking` | Whether to send adaptive thinking (`thinking.type: "adaptive"` plus `output_config.effort`) for this model. Built-in adaptive models set this automatically. Default: `false`. |
 | `allowEmptySignature` | Whether to replay empty thinking signatures as `signature: ""` instead of converting thinking to text. Default: `false`. |
+| `authMode` | Auth behavior for Anthropic Messages requests: `"auto"` keeps token-prefix detection, `"oauth"` forces Bearer auth plus Claude Code OAuth behavior, and `"apiKey"` forces `X-Api-Key` auth. Default: `"auto"`. |
 
 ## OpenAI Compatibility
 

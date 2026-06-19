@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added `models.json` support and docs for Anthropic Messages `compat.authMode` ([#5871](https://github.com/earendil-works/pi/issues/5871)).
+
 ### Fixed
 
 - Fixed bash commands through legacy WSL `bash.exe` to pass scripts over stdin so shell variables expand in the target bash ([#5893](https://github.com/earendil-works/pi/issues/5893)).

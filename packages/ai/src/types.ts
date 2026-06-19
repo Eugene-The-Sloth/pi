@@ -486,6 +486,13 @@ export interface AnthropicMessagesCompat {
 	forceAdaptiveThinking?: boolean;
 	/** Whether to replay empty thinking signatures as `signature: ""` instead of converting thinking to text. Default: false. */
 	allowEmptySignature?: boolean;
+	/**
+	 * Which auth behavior to use for Anthropic Messages requests.
+	 * "auto" keeps the default token-prefix detection, "oauth" forces Bearer auth
+	 * plus Claude Code OAuth request behavior, and "apiKey" forces X-Api-Key auth.
+	 * Default: "auto".
+	 */
+	authMode?: "auto" | "apiKey" | "oauth";
 }
 
 /**

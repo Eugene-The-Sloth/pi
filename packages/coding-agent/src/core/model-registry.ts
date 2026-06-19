@@ -136,6 +136,7 @@ const AnthropicMessagesCompatSchema = Type.Object({
 	sendSessionAffinityHeaders: Type.Optional(Type.Boolean()),
 	supportsCacheControlOnTools: Type.Optional(Type.Boolean()),
 	forceAdaptiveThinking: Type.Optional(Type.Boolean()),
+	authMode: Type.Optional(Type.Union([Type.Literal("auto"), Type.Literal("apiKey"), Type.Literal("oauth")])),
 });
 
 const ProviderCompatSchema = Type.Union([

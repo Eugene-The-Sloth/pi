@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added Anthropic Messages `compat.authMode` so compatible providers can force Bearer/OAuth or API-key auth behavior ([#5871](https://github.com/earendil-works/pi/issues/5871)).
+
 ### Fixed
 
 - Fixed GitHub Copilot OAuth model availability to use the authenticated account's model picker catalog ([#5897](https://github.com/earendil-works/pi/issues/5897)).

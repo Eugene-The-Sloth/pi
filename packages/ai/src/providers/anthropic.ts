@@ -183,6 +183,7 @@ function getAnthropicCompat(
 		supportsCacheControlOnTools: model.compat?.supportsCacheControlOnTools ?? !isFireworks,
 		supportsTemperature: model.compat?.supportsTemperature ?? true,
 		allowEmptySignature: model.compat?.allowEmptySignature ?? false,
+		authMode: model.compat?.authMode ?? "auto",
 	};
 }
 
@@ -864,8 +865,11 @@ function createClient(
 		return { client, isOAuthToken: false };
 	}
 
+	const compat = getAnthropicCompat(model);
+	const useOAuthAuth = compat.authMode === "oauth" || (compat.authMode === "auto" && isOAuthToken(apiKey));
+
 	// OAuth: Bearer auth, Claude Code identity headers
-	if (isOAuthToken(apiKey)) {
+	if (useOAuthAuth) {
 		const client = new Anthropic({
 			apiKey: null,
 			authToken: apiKey,
@@ -889,7 +893,7 @@ function createClient(
 
 	// API key auth
 	const sessionAffinityHeaders: Record<string, string | null> =
-		sessionId && getAnthropicCompat(model).sendSessionAffinityHeaders ? { "x-session-affinity": sessionId } : {};
+		sessionId && compat.sendSessionAffinityHeaders ? { "x-session-affinity": sessionId } : {};
 	const client = new Anthropic({
 		apiKey,
 		authToken: null,

@@ -492,6 +492,35 @@ describe("ModelRegistry", () => {
 			expect(compat?.supportsLongCacheRetention).toBe(false);
 		});
 
+		test("compat schema accepts Anthropic auth mode", () => {
+			writeRawModelsJson({
+				demo: {
+					baseUrl: "https://example.com",
+					apiKey: "DEMO_KEY",
+					api: "anthropic-messages",
+					compat: {
+						authMode: "oauth",
+					},
+					models: [
+						{
+							id: "demo-model",
+							reasoning: true,
+							input: ["text"],
+							cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+							contextWindow: 1000,
+							maxTokens: 100,
+						},
+					],
+				},
+			});
+
+			const registry = ModelRegistry.create(authStorage, modelsJsonPath);
+			const compat = registry.find("demo", "demo-model")?.compat as AnthropicMessagesCompat | undefined;
+
+			expect(registry.getError()).toBeUndefined();
+			expect(compat?.authMode).toBe("oauth");
+		});
+
 		test("model-level baseUrl overrides provider-level baseUrl for custom models", () => {
 			writeRawModelsJson({
 				"opencode-go": {
